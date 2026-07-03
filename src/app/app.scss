@@ -1,0 +1,33 @@
+.contenedor{
+
+display:flex;
+
+flex-wrap:wrap;
+
+gap:20px;
+
+}
+
+.card{
+
+width:220px;
+
+padding:20px;
+
+border:1px solid gray;
+
+border-radius:10px;
+
+text-align:center;
+
+box-shadow:2px 2px 5px gray;
+
+}
+
+img{
+
+width:120px;
+
+height:120px;
+
+}
