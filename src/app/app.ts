@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { PokemonService } from './feature/Pokemon/service/pokemon-service';
 import { Pokemon } from './feature/Pokemon/model/pokemon-model';
+import { Subject, switchMap, debounceTime, distinctUntilChanged, of } from 'rxjs';
 
 
 @Component({
@@ -13,7 +14,9 @@ export class App implements OnInit {
 
   pokemons: Pokemon[] = [];
 
+  offset=0;
 
+buscarPokemon = new Subject<string>();
 
   cargando = true;
 
@@ -24,30 +27,123 @@ export class App implements OnInit {
       private cdr : ChangeDetectorRef,
   ){}
 
-  ngOnInit(): void {
+buscar(nombre: string): void {
 
-      this.pokemonService.getPokemons().subscribe({
+  this.cargando = true;
 
-          next: data =>{
+  this.buscarPokemon.next(nombre);
 
-              this.pokemons = data;
+}
 
-              this.cargando = false;
 
-              this.cdr.detectChanges();
+ cargarPokemons(): void {
 
-          },
+  this.cargando = true;
 
-          error: ()=>{
+  this.pokemonService.getPokemons(this.offset).subscribe({
 
-              this.error = 'No fue posible cargar los Pokémon';
+    next: data => {
 
-              this.cargando = false;
+      this.pokemons = data;
 
-          }
+      this.cargando = false;
 
-      });
+      this.cdr.detectChanges();
+
+    },
+
+    error: () => {
+
+      this.error = 'No fue posible cargar los Pokémon';
+
+      this.cargando = false;
+
+    }
+
+  });
+
+}
+
+
+
+ngOnInit(): void {
+
+  this.cargarPokemons();
+
+ this.buscarPokemon.pipe(
+
+  debounceTime(1000),
+
+  distinctUntilChanged(),
+
+  switchMap(nombre => {
+
+    nombre = nombre.trim().toLowerCase();
+
+  if (nombre === '') {
+    return this.pokemonService.getPokemons(this.offset);
+  }
+
+  if (nombre.length < 4) {
+    return of([]); // No consulta la API todavía
+  }
+
+  
+
+    return this.pokemonService.buscarPokemon(nombre);
+
+  })
+
+).subscribe({
+
+  next: pokemons => {
+
+    this.pokemons = pokemons;
+
+    this.cargando = false;
+
+    this.error = '';
+
+    this.cdr.detectChanges();
+
+  },
+
+  error: () => {
+
+    this.cargando = false;
+
+    this.error = 'Pokémon no encontrado';
 
   }
+
+});
+
+}
+
+siguiente(): void {
+
+  this.offset += 20;
+
+  this.cargarPokemons();
+
+}
+
+anterior(): void {
+
+  if (this.offset >= 20) {
+
+    this.offset -= 20;
+
+    this.cargarPokemons();
+
+  }
+
+}
+
+get paginaActual(): number {
+
+  return this.offset / 20 + 1;
+
+}
   
 }

@@ -8,18 +8,43 @@ import { forkJoin, map, Observable, switchMap } from 'rxjs';
 })
 export class PokemonService {
 
-private apiUrl = 'https://pokeapi.co/api/v2/pokemon?limit=20&offset=0';
+private apiUrl = 'https://pokeapi.co/api/v2/pokemon';
 
 
 constructor(private http: HttpClient) { }
 
-getPokemons(): Observable<Pokemon[]> {
-  return this.http.get<PokemonListResponse>(this.apiUrl).pipe(switchMap(respuesta => {
-    const peticiones = respuesta.results.map(pokemon => this.http.get<Pokemon>(pokemon.url)
-  );
-  return forkJoin(peticiones);
-  }),
-  map(datos => datos)
+
+buscarPokemon(nombre: string): Observable<Pokemon[]> {
+
+  return this.http
+    .get<Pokemon>(
+      `https://pokeapi.co/api/v2/pokemon/${nombre.toLowerCase()}`
+    )
+    .pipe(
+      map(pokemon => [pokemon])
+    );
+
+}
+
+getPokemons(offset:number):Observable<Pokemon[]>{
+
+return this.http.get<PokemonListResponse>(
+`${this.apiUrl}?limit=20&offset=${offset}`)
+
+.pipe(
+
+switchMap(response=>{
+
+const requests=response.results.map(pokemon=>
+
+this.http.get<Pokemon>(pokemon.url)
+
+);
+
+return forkJoin(requests);
+
+})
+
 );
 
 }
